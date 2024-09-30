@@ -42,20 +42,20 @@ public class FileDownloader {
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
                 // 处理请求失败的情况
-                callback.callback(false);
+                callback.callback(false,filePath);
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful()){
                     Log.e(TAG, "response   " + response);
-                    callback.callback(false);
+                    callback.callback(false,filePath);
                     return;
                 }
 
                 ResponseBody responseBody = response.body();
                 if (responseBody == null){
-                    callback.callback(false);
+                    callback.callback(false,filePath);
                     return;
                 }
 
@@ -72,7 +72,7 @@ public class FileDownloader {
                 }
 
                 // 在这里，文件已经被保存到磁盘上，你可以更新UI或进行其他操作
-                callback.callback(true);
+                callback.callback(true,filePath);
             }
         });
     }
@@ -110,7 +110,7 @@ public class FileDownloader {
 
 
 interface DownloadCallback{
-    void callback(boolean isSuccess);
+    void callback(boolean isSuccess,String path);
 }
 
 interface DownloadJsonStrCallback{

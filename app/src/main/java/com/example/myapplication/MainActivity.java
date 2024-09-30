@@ -43,7 +43,8 @@ public class MainActivity extends AppCompatActivity {
     Server server;
 
     //String CDNUrl = "https://sanguo-web-mobile-2em0ex294551e7-1257352752.ap-shanghai.app.tcloudbase.com/";
-    String CDNUrl = "http://192.168.1.3:8000/";
+    //String CDNUrl = "http://192.168.1.3:8000/";
+     String CDNUrl = "https://75319b7c.gemini-web-mobile.pages.dev/";
 
     //String url = "https://6f099278.sanguo-web-mobile.pages.dev/";
     //String url = "http://192.168.3.2:8000/";
@@ -174,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
 
         webView.loadUrl(url);
         //webView.loadUrl("http://192.168.1.3:7456/");
+        //webView.loadUrl("https://6f099278.sanguo-web-mobile.pages.dev/");
 
     }
 
@@ -205,10 +207,10 @@ class WebAppInterface {
 
     @JavascriptInterface
     public void downloadFile(String url, String path) {
-        FileDownloader.downloadFile(url, mContext.getFilesDir().getPath() + path, isSuccess -> {
+        FileDownloader.downloadFile(url, mContext.getFilesDir().getPath() + path, (isSuccess,filePath) -> {
             mContext.runOnUiThread(() -> {
-                if (isSuccess)
-                    mContext.webView.evaluateJavascript("globalThis.downloadCallback()", null);
+                String str=isSuccess?"true":"false";
+                mContext.webView.evaluateJavascript("globalThis.downloadCallback("+str+",'"+filePath+"')", null);
             });
         });
     }
@@ -237,7 +239,9 @@ class WebAppInterface {
     public void readRemoteJsonFile(String url) {
         FileDownloader.downloadJsonStr(url, (String url2, String str) -> {
             mContext.runOnUiThread(() -> {
-                mContext.webView.evaluateJavascript("globalThis.readRemoteJsonFileCallback('" + url2 + "','" + str + "')", null);
+                String result=str;
+                if(str==null) result="error";
+                mContext.webView.evaluateJavascript("globalThis.readRemoteJsonFileCallback('" + url2 + "','" + result + "')", null);
             });
         });
     }
@@ -255,5 +259,10 @@ class WebAppInterface {
     @JavascriptInterface
     public String getVersion() {
        return "v1.0";
+    }
+
+    @JavascriptInterface
+    public String getRemoteUrl() {
+        return mContext.CDNUrl;
     }
 }
