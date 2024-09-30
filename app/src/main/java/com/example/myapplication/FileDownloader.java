@@ -17,9 +17,9 @@ import java.io.InputStream;
 
 public class FileDownloader {
 
-    private OkHttpClient client = new OkHttpClient();
+    private static OkHttpClient client = new OkHttpClient();
 
-    public void downloadFile(String url, String filePath,DownloadCallback callback) {
+    public static void downloadFile(String url, String filePath,DownloadCallback callback) {
         File file0 = new File(filePath);
         // 获取文件名
         String fileName = file0.getName();
@@ -50,10 +50,14 @@ public class FileDownloader {
                 if (!response.isSuccessful()){
                     Log.e(TAG, "response   " + response);
                     callback.callback(false);
+                    return;
                 }
 
                 ResponseBody responseBody = response.body();
-                if (responseBody == null) return;
+                if (responseBody == null){
+                    callback.callback(false);
+                    return;
+                }
 
                 try (InputStream inputStream = responseBody.byteStream();
                      FileOutputStream fileOutputStream = new FileOutputStream(file)) {
@@ -72,6 +76,36 @@ public class FileDownloader {
             }
         });
     }
+
+
+    public static void downloadJsonStr(String url,DownloadJsonStrCallback callback) {
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+                // 处理请求失败的情况
+                callback.callback(url,null);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()){
+                    Log.e(TAG, "response   " + response);
+                    callback.callback(url,null);
+                    return;
+                }
+                ResponseBody responseBody = response.body();
+                if (responseBody == null){
+                    callback.callback(url,null);
+                    return;
+                }
+                callback.callback(url,response.body().string());
+            }
+        });
+    }
 }
 
 
@@ -79,6 +113,8 @@ interface DownloadCallback{
     void callback(boolean isSuccess);
 }
 
-// 在你的Activity或Fragment中调用它
-// new FileDownloader().downloadFile("http://example.com/file.zip", "/sdcard/Download/", "file.zip");
-// 注意：从Android 10（API 级别 29）开始，对于外部存储的访问方式发生了变化，你可能需要使用MediaStore API或Scoped Storage
+interface DownloadJsonStrCallback{
+    void callback(String url,String result);
+}
+
+

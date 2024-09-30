@@ -23,8 +23,10 @@ import android.widget.Toast;
 import com.yanzhenjie.andserver.AndServer;
 import com.yanzhenjie.andserver.Server;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,7 +42,8 @@ public class MainActivity extends AppCompatActivity {
 
     Server server;
 
-    String CDNUrl="https://sanguo-web-mobile-2em0ex294551e7-1257352752.ap-shanghai.app.tcloudbase.com/";
+    //String CDNUrl = "https://sanguo-web-mobile-2em0ex294551e7-1257352752.ap-shanghai.app.tcloudbase.com/";
+    String CDNUrl = "http://192.168.1.3:8000/";
 
     //String url = "https://6f099278.sanguo-web-mobile.pages.dev/";
     //String url = "http://192.168.3.2:8000/";
@@ -63,12 +66,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        AssetCopier.copyAssetsRecursively(this,"dist");
-       /* AssetCopier.copyAssetsRecursively(this,"dist/cocos-js");
-        AssetCopier.copyAssetsRecursively(this,"dist/src/import-map.json");
-        AssetCopier.copyAssetsRecursively(this,"dist/src/polyfills.bundle.js");
-        AssetCopier.copyAssetsRecursively(this,"dist/src/settings.json");
-        AssetCopier.copyAssetsRecursively(this,"dist/src/system.bundle.js");*/
+        //如果data_files下没有文件就先整体拷贝一份过去
+        File pg = new File(this.getFilesDir(), "dist/project.manifest");
+        boolean reslult = true;
+        if (!pg.exists()) {
+            reslult = AssetCopier.copyAssetsRecursively(this, "dist");
+        }
+        if (!reslult) {
+            Log.e(TAG, "Copy Project Exception");
+            return;
+        }
 
         server = AndServer.webServer(this)
                 .port(8080)
@@ -93,34 +100,29 @@ public class MainActivity extends AppCompatActivity {
 
         server.startup();
         this.createWebView();
-
-        new FileDownloader().downloadFile("http://192.168.3.2:8000/index.html", this.getFilesDir().getPath()+"/dfsdsdfs/sdfsdf/hehvvvve.html", new DownloadCallback() {
-            @Override
-            public void callback(boolean isSuccess) {
-
-            }
-        });
     }
 
-    public String readDataJosnFile(String path){
-
-        return  "";
+    public void restart() {
+       try {
+           this.runOnUiThread(() -> {
+               webView.loadUrl(url);
+           });
+       }catch (Exception e){
+           Log.e(TAG, "restart " + e.toString());
+       }
     }
 
-    public String readAssetJosnFile(String path){
-
-        return  "";
+    public void quit() {
+        try {
+            this.runOnUiThread(() -> {
+                finish();
+            });
+        }catch (Exception e){
+            Log.e(TAG, "restart " + e.toString());
+        }
     }
 
-    public void restart(){
-        webView.loadUrl(url);
-    }
-
-    public  void quit(){
-
-    }
-
-    private WebView webView = null;
+    public WebView webView = null;
 
     /* 创建 WebView 实例 */
     @SuppressLint("SetJavaScriptEnabled")
@@ -170,10 +172,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 加载指定网页
-
         webView.loadUrl(url);
-        //webView.loadUrl("file://android_asset/index.html");
+        //webView.loadUrl("http://192.168.1.3:7456/");
 
     }
 
@@ -190,10 +190,10 @@ public class MainActivity extends AppCompatActivity {
 }
 
 class WebAppInterface {
-    Context mContext;
+    MainActivity mContext;
 
     // 实例化接口并传入Context
-    WebAppInterface(Context c) {
+    WebAppInterface(MainActivity c) {
         mContext = c;
     }
 
@@ -201,5 +201,59 @@ class WebAppInterface {
     @JavascriptInterface
     public void showToast(String toast) {
         Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
+    }
+
+    @JavascriptInterface
+    public void downloadFile(String url, String path) {
+        FileDownloader.downloadFile(url, mContext.getFilesDir().getPath() + path, isSuccess -> {
+            mContext.runOnUiThread(() -> {
+                if (isSuccess)
+                    mContext.webView.evaluateJavascript("globalThis.downloadCallback()", null);
+            });
+        });
+    }
+
+    @JavascriptInterface
+    public String readDataJsonFile(String path) {
+        File jsonFile = new File(mContext.getFilesDir(), path);
+        if (jsonFile.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(jsonFile))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+                return sb.toString();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    @JavascriptInterface
+    public void readRemoteJsonFile(String url) {
+        FileDownloader.downloadJsonStr(url, (String url2, String str) -> {
+            mContext.runOnUiThread(() -> {
+                mContext.webView.evaluateJavascript("globalThis.readRemoteJsonFileCallback('" + url2 + "','" + str + "')", null);
+            });
+        });
+    }
+
+    @JavascriptInterface
+    public void restart() {
+        mContext.restart();
+    }
+
+    @JavascriptInterface
+    public void quit() {
+        mContext.quit();
+    }
+
+    @JavascriptInterface
+    public String getVersion() {
+       return "v1.0";
     }
 }
