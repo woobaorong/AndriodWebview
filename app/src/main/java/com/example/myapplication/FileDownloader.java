@@ -14,10 +14,20 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 
 public class FileDownloader {
 
-    private static OkHttpClient client = new OkHttpClient();
+    private static OkHttpClient client;
+
+    public  static  void initClient(){
+        client = new OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS) // 设置连接超时时间为10秒
+                .callTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
+                .build();
+    }
 
     public static void downloadFile(String url, String filePath,DownloadCallback callback) {
         File file0 = new File(filePath);

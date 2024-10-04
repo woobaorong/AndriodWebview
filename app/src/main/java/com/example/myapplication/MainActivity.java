@@ -1,13 +1,21 @@
 package com.example.myapplication;
 
 import static android.content.ContentValues.TAG;
+import static android.content.Context.DOWNLOAD_SERVICE;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -44,15 +52,17 @@ public class MainActivity extends AppCompatActivity {
 
     //String CDNUrl = "https://sanguo-web-mobile-2em0ex294551e7-1257352752.ap-shanghai.app.tcloudbase.com/";
     //String CDNUrl = "http://192.168.1.3:8000/";
-     String CDNUrl = "https://75319b7c.gemini-web-mobile.pages.dev/";
+    String CDNUrl = "http://192.168.3.2:8000/";
+    //String CDNUrl = "https://gemini-web-mobile.pages.dev/";
+    //String CDNUrl = "https://geministarflow.netlify.app/";
 
     //String url = "https://6f099278.sanguo-web-mobile.pages.dev/";
     //String url = "http://192.168.3.2:8000/";
-    //String url = "https://www.baidu.com/";
-    String url = "http://127.0.0.1:8080/index.html";
+    String url = "http://127.0.0.1:8080/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        FileDownloader.initClient();
         // 设置为全屏（隐藏状态栏）
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -77,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Copy Project Exception");
             return;
         }
+
+        //ApkUpdater.downloadAPK("http://192.168.3.2:8765/app.apk", this);
 
         server = AndServer.webServer(this)
                 .port(8080)
@@ -265,4 +277,11 @@ class WebAppInterface {
     public String getRemoteUrl() {
         return mContext.CDNUrl;
     }
+
+    @JavascriptInterface
+    public void updateApk(String url) {
+        ApkUpdater.downloadAPK(url, mContext);
+    }
+
+
 }
